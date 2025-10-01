@@ -7,93 +7,95 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.hungrytoad.R
-
+val RuneScape = FontFamily(
+    Font(R.font.rune_scape)
+)
 val Harreegh = FontFamily(
     Font(R.font.harreegh)
 )
 val Typography = Typography(
     bodyLarge = TextStyle(
-        fontFamily = Harreegh,
+        fontFamily = RuneScape,
         fontWeight = FontWeight.Normal,
-        fontSize = 26.sp,
-        lineHeight = 27.sp,
+        fontSize = 27.sp,
+        lineHeight = 28.sp,
         letterSpacing = 0.5.sp
     ),
     titleLarge = TextStyle(
-        fontFamily = Harreegh,
+        fontFamily = RuneScape,
         fontWeight = FontWeight.Normal,
-        fontSize = 26.sp,
-        lineHeight = 27.sp,
-        letterSpacing = 0.sp
+        fontSize = 27.sp,
+        lineHeight = 28.sp,
+        letterSpacing = 0.5.sp
     ),
     headlineLarge = TextStyle(
-        fontFamily = Harreegh,
+        fontFamily = RuneScape,
         fontWeight = FontWeight.Normal,
-        fontSize = 26.sp,
-        lineHeight = 27.sp,
+        fontSize = 27.sp,
+        lineHeight = 28.sp,
         letterSpacing = 0.5.sp
     ),
     labelLarge = TextStyle(
-        fontFamily = Harreegh,
+        fontFamily = RuneScape,
         fontWeight = FontWeight.Normal,
-        fontSize = 26.sp,
-        lineHeight = 27.sp,
+        fontSize = 27.sp,
+        lineHeight = 28.sp,
         letterSpacing = 0.5.sp
     ),
     bodyMedium = TextStyle(
-        fontFamily = Harreegh,
+        fontFamily = RuneScape,
         fontWeight = FontWeight.Normal,
-        fontSize = 20.sp,
-        lineHeight = 21.sp,
+        fontSize = 22.sp,
+        lineHeight = 23.sp,
         letterSpacing = 0.5.sp
     ),
     headlineMedium = TextStyle(
-        fontFamily = Harreegh,
+        fontFamily = RuneScape,
         fontWeight = FontWeight.Normal,
-        fontSize = 20.sp,
-        lineHeight = 21.sp,
+        fontSize = 22.sp,
+        lineHeight = 23.sp,
         letterSpacing = 0.5.sp
     ),
     titleMedium = TextStyle(
-        fontFamily = Harreegh,
+        fontFamily = RuneScape,
         fontWeight = FontWeight.Normal,
-        fontSize = 20.sp,
-        lineHeight = 21.sp,
-        letterSpacing = 0.sp
+        fontSize = 22.sp,
+        lineHeight = 23.sp,
+        letterSpacing = 0.5.sp
     ),
     labelMedium = TextStyle(
-        fontFamily = Harreegh,
+        fontFamily = RuneScape,
         fontWeight = FontWeight.Normal,
-        fontSize = 20.sp,
-        lineHeight = 21.sp,
+        fontSize = 22.sp,
+        lineHeight = 23.sp,
         letterSpacing = 0.5.sp
     ),
     headlineSmall = TextStyle(
-        fontFamily = Harreegh,
+        fontFamily = RuneScape,
         fontWeight = FontWeight.Normal,
-        fontSize = 17.sp,
-        lineHeight = 18.sp,
+        fontSize = 18.sp,
+        lineHeight = 19.sp,
         letterSpacing = 0.5.sp
     ),
     titleSmall = TextStyle(
-        fontFamily = Harreegh,
+        fontFamily = RuneScape,
         fontWeight = FontWeight.Normal,
-        fontSize = 17.sp,
-        lineHeight = 18.sp,
-        letterSpacing = 0.sp
+        fontSize = 18.sp,
+        lineHeight = 19.sp,
+        letterSpacing = 0.5.sp
     ),
     labelSmall = TextStyle(
-        fontFamily = Harreegh,
+        fontFamily = RuneScape,
         fontWeight = FontWeight.Normal,
         fontSize = 17.sp,
         lineHeight = 18.sp,
         letterSpacing = 0.5.sp
     ),
     bodySmall = TextStyle(
-        fontFamily = Harreegh,
+        fontFamily = RuneScape,
         fontWeight = FontWeight.Normal,
-        fontSize = 17.sp,
-        lineHeight = 18.sp,
+        fontSize = 18.sp,
+        lineHeight = 19.sp,
         letterSpacing = 0.5.sp
     )
 )

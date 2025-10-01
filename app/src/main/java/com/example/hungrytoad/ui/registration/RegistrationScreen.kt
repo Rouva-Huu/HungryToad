@@ -1,10 +1,10 @@
 package com.example.hungrytoad.ui.registration
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import java.util.Calendar
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -16,15 +16,12 @@ import com.example.hungrytoad.utils.ZodiacUtils
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
-import androidx.navigation.NavController
 import com.example.hungrytoad.model.Player
-import com.example.hungrytoad.ui.theme.DarkGreen
-import com.example.hungrytoad.ui.theme.LightNude
-import com.example.hungrytoad.ui.theme.Marsh
+import com.example.hungrytoad.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RegistrationScreen(navController: NavController) {
+fun RegistrationScreen(onRegistrationComplete: (Player) -> Unit) {
     var fullName by remember { mutableStateOf("") }
     var selectedGender by remember { mutableStateOf("") }
     var selectedCourse by remember { mutableStateOf("") }
@@ -113,45 +110,55 @@ fun RegistrationScreen(navController: NavController) {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text("Регистрация игрока", style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(top = 50.dp, start = 10.dp))
+            modifier = Modifier.padding(top = 10.dp, start = 10.dp))
 
         OutlinedTextField(
             value = fullName,
             onValueChange = { fullName = it },
             label = { Text("ФИО", style = MaterialTheme.typography.labelMedium) },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Text("Пол", style = MaterialTheme.typography.bodyMedium)
-        Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround
+            colors = TextFieldDefaults.colors(
+                unfocusedTextColor = PaleGreen,
+                unfocusedLabelColor = PaleGreen,
+                unfocusedContainerColor = Nude,
+                focusedContainerColor = Nude
+            )
+        )
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            colors = CardDefaults.cardColors(containerColor = LightNude)
         ) {
-            genders.forEach { gender ->
-                Row(
-                    Modifier
-                        .selectable(
+            Text("Пол", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(start = 16.dp, top = 16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                genders.forEach { gender ->
+                    Row(
+                        Modifier
+                            .selectable(
+                                selected = (gender == selectedGender),
+                                onClick = { selectedGender = gender },
+                                role = Role.RadioButton
+                            )
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
                             selected = (gender == selectedGender),
-                            onClick = { selectedGender = gender },
-                            role = Role.RadioButton
+                            onClick = null
                         )
-                        .padding(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
-                        selected = (gender == selectedGender),
-                        onClick = null
-                    )
-                    Text(
-                        text = gender,
-                        modifier = Modifier.padding(start = 8.dp),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                        Text(
+                            text = gender,
+                            modifier = Modifier.padding(start = 8.dp),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
                 }
             }
         }
-
-        Text("Курс", style = MaterialTheme.typography.bodyMedium)
         ExposedDropdownMenuBox(
             expanded = courseExpanded,
             onExpandedChange = { courseExpanded = !courseExpanded }
@@ -163,16 +170,22 @@ fun RegistrationScreen(navController: NavController) {
                 trailingIcon = {
                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = courseExpanded)
                 },
-                colors = OutlinedTextFieldDefaults.colors(),
+                colors = TextFieldDefaults.colors(
+                    unfocusedTextColor = PaleGreen,
+                    unfocusedLabelColor = PaleGreen,
+                    unfocusedContainerColor = Nude,
+                    focusedContainerColor = Nude
+                ),
                 modifier = Modifier
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .menuAnchor(),
                 label = { Text("Выберите курс", style = MaterialTheme.typography.bodyMedium) }
             )
 
-            DropdownMenu(
+            ExposedDropdownMenu(
                 expanded = courseExpanded,
                 onDismissRequest = { courseExpanded = false },
-                modifier = Modifier.fillMaxWidth(0.9f)
+                modifier = Modifier.fillMaxWidth(0.92f).background(LightNude)
             ) {
                 courses.forEach { course ->
                     DropdownMenuItem(
@@ -185,23 +198,6 @@ fun RegistrationScreen(navController: NavController) {
                 }
             }
         }
-
-        Text(
-            "Уровень сложности: $difficultyLevel",
-            style = MaterialTheme.typography.bodyMedium
-        )
-        Slider(
-            value = sliderValue,
-            onValueChange = { onDifficultyChanged(it) },
-            valueRange = 1f..5f,
-            steps = 3,
-            modifier = Modifier.fillMaxWidth(),
-            colors = SliderDefaults.colors(thumbColor = Marsh,
-                activeTrackColor = Marsh,
-                inactiveTrackColor = LightNude
-            )
-        )
-
         Text(
             "Дата рождения: ${birthDate.get(Calendar.DAY_OF_MONTH)}." +
                     "${birthDate.get(Calendar.MONTH) + 1}." +
@@ -213,7 +209,7 @@ fun RegistrationScreen(navController: NavController) {
             onClick = {
                 showDatePicker = true
             },
-            modifier = Modifier.fillMaxWidth(0.9f)
+            modifier = Modifier.fillMaxWidth()
                 .align(Alignment.CenterHorizontally)
         ) {
             Text("Выбрать дату рождения", style = MaterialTheme.typography.bodyMedium,
@@ -221,7 +217,7 @@ fun RegistrationScreen(navController: NavController) {
                     .padding(horizontal = 12.dp, vertical = 10.dp))
         }
         Row (
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().padding(0.dp)
         ) {
             Text("Знак зодиака: $zodiacSign", style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.align(Alignment.CenterVertically))
@@ -229,10 +225,51 @@ fun RegistrationScreen(navController: NavController) {
                 painter = painterResource(ZodiacUtils.getZodiacIconResource(zodiacSign)),
                 contentDescription = zodiacSign,
                 modifier = Modifier
-                    .size(64.dp)
-                    .padding(start = 18.dp)
+                    .size(56.dp)
+                    .padding(start = 10.dp)
             )
         }
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            colors = CardDefaults.cardColors(containerColor = LightNude)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Уровень сложности",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = "$difficultyLevel",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = DarkGreen
+                    )
+                }
+                Slider(
+                    value = sliderValue,
+                    onValueChange = { onDifficultyChanged(it) },
+                    valueRange = 1f..5f,
+
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = SliderDefaults.colors(
+                        thumbColor = PaleGreen,
+                        activeTrackColor = PaleGreen,
+                        inactiveTrackColor = Marsh
+                    )
+                )
+            }
+        }
+
+
+
         Button(
             onClick = {
                 val player = Player(
@@ -243,15 +280,10 @@ fun RegistrationScreen(navController: NavController) {
                     birthDate = birthDate,
                     zodiacSign = zodiacSign
                 )
-
-                navController.currentBackStackEntry?.savedStateHandle?.set(
-                    "playerData",
-                    player
-                )
-                navController.navigate("results")
+                onRegistrationComplete(player)
             },
             modifier = Modifier
-                .fillMaxWidth(0.9f)
+                .fillMaxWidth()
                 .align(Alignment.CenterHorizontally)
         ) {
             Text("Зарегистрироваться", style = MaterialTheme.typography.bodyMedium,

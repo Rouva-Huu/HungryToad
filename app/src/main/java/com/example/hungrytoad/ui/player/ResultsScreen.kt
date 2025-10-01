@@ -1,15 +1,7 @@
-package com.example.hungrytoad.ui.registration
+package com.example.hungrytoad.ui.player
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -33,44 +25,30 @@ import com.example.hungrytoad.utils.ZodiacUtils
 import java.util.Calendar
 
 @Composable
-fun ResultsScreen(navController: NavController) {
-    var playerData by remember { mutableStateOf<Player?>(null) }
-
-    LaunchedEffect(Unit) {
-        val data = navController.previousBackStackEntry
-            ?.savedStateHandle
-            ?.get<Player>("playerData")
-        playerData = data
+fun ResultsScreen(playerData: Player, onReturnToRegistration: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        PlayerResults(player = playerData, onReturnToRegistration = onReturnToRegistration)
     }
-
-//    Column(
-//        modifier = Modifier
-//            .fillMaxSize()
-//            .padding(16.dp),
-//        horizontalAlignment = Alignment.CenterHorizontally,
-//        verticalArrangement = Arrangement.Center
-//    ) {
-//        if (playerData != null) {
-//            PlayerResults(playerData!!, navController)
-//        } else {
-//            Text("Данные не найдены")
-//        }
-//    }
 }
 
 @Composable
-fun PlayerResults(player: Player, navController: NavController) {
+fun PlayerResults(player: Player, onReturnToRegistration: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+//        verticalArrangement = Arrangement.Center
     ) {
         Text(
             "Регистрация завершена!",
             style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(bottom = 24.dp)
+            modifier = Modifier.padding(top = 30.dp,bottom = 20.dp)
         )
-
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -82,28 +60,22 @@ fun PlayerResults(player: Player, navController: NavController) {
             Column(
                 modifier = Modifier.padding(24.dp)
             ) {
-                Text("Данные игрока:", style = MaterialTheme.typography.headlineMedium)
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text("ФИО: ${player.fullName}", fontSize = 18.sp)
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text("Пол: ${player.gender}", fontSize = 18.sp)
-                Spacer(modifier = Modifier.height(8.dp))
-
+                Text("Данные игрока:", fontSize = 25.sp)
+                Spacer(modifier = Modifier.height(24.dp))
+                Text("ФИО: ${player.fullName}", style = MaterialTheme.typography.bodyMedium)
+                Spacer(modifier = Modifier.height(17.dp))
+                Text("Пол: ${player.gender}", style = MaterialTheme.typography.bodyMedium)
+                Spacer(modifier = Modifier.height(17.dp))
                 Text("Курс: ${player.course}", style = MaterialTheme.typography.bodyMedium)
-                Spacer(modifier = Modifier.height(8.dp))
-
+                Spacer(modifier = Modifier.height(17.dp))
                 Text("Уровень сложности: ${player.difficultyLevel}", style = MaterialTheme.typography.bodyMedium)
-                Spacer(modifier = Modifier.height(8.dp))
-
+                Spacer(modifier = Modifier.height(17.dp))
                 Text(
                     "Дата рождения: ${player.birthDate.get(Calendar.DAY_OF_MONTH)}." +
                             "${player.birthDate.get(Calendar.MONTH) + 1}." +
                             "${player.birthDate.get(Calendar.YEAR)}",
                     style = MaterialTheme.typography.bodyMedium
                 )
-                Spacer(modifier = Modifier.height(8.dp))
                 Row (
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -116,24 +88,21 @@ fun PlayerResults(player: Player, navController: NavController) {
                         painter = painterResource(ZodiacUtils.getZodiacIconResource(player.zodiacSign)),
                         contentDescription = player.zodiacSign,
                         modifier = Modifier
-                            .size(64.dp)
+                            .size(60.dp)
                             .padding(start = 18.dp)
                     )
                 }
             }
         }
-
         Button(
-            onClick = {
-                navController.popBackStack()
-            },
+            onClick = onReturnToRegistration,
             modifier = Modifier
                 .fillMaxWidth(1f)
                 .padding(16.dp)
         ) {
             Text("Вернуться к регистрации", style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier
-                .padding(vertical = 10.dp))
+                    .padding(vertical = 10.dp))
         }
     }
 }
