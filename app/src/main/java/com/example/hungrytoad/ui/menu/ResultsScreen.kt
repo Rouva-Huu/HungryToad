@@ -1,24 +1,20 @@
-package com.example.hungrytoad.ui.player
+package com.example.hungrytoad.ui.menu
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
 import com.example.hungrytoad.model.Player
 import com.example.hungrytoad.ui.theme.LightNude
 import com.example.hungrytoad.utils.ZodiacUtils
@@ -29,9 +25,9 @@ fun ResultsScreen(playerData: Player, onReturnToRegistration: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         PlayerResults(player = playerData, onReturnToRegistration = onReturnToRegistration)
     }
@@ -41,17 +37,17 @@ fun ResultsScreen(playerData: Player, onReturnToRegistration: () -> Unit) {
 fun PlayerResults(player: Player, onReturnToRegistration: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.CenterHorizontally
 //        verticalArrangement = Arrangement.Center
     ) {
         Text(
             "Регистрация завершена!",
             style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(top = 30.dp,bottom = 20.dp)
+            modifier = Modifier.padding(top = 10.dp,bottom = 10.dp)
         )
         Card(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxWidth(0.9f)
                 .padding(16.dp),
             colors = CardDefaults.cardColors(
                 containerColor = LightNude,
@@ -97,7 +93,7 @@ fun PlayerResults(player: Player, onReturnToRegistration: () -> Unit) {
         Button(
             onClick = onReturnToRegistration,
             modifier = Modifier
-                .fillMaxWidth(1f)
+                .fillMaxWidth(0.9f)
                 .padding(16.dp)
         ) {
             Text("Вернуться к регистрации", style = MaterialTheme.typography.bodyMedium,

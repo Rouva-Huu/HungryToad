@@ -1,7 +1,7 @@
 package com.example.hungrytoad.model
 
 import android.os.Parcelable
-import kotlinx.android.parcel.Parcelize
+import kotlinx.parcelize.Parcelize
 
 @Parcelize
 data class GameSettings(
@@ -10,4 +10,4 @@ data class GameSettings(
     val roundDuration: Float = 60f,
     val soundEnabled: Boolean = true,
     val vibrationEnabled: Boolean = true
-) : Parcelable
+) : java.io.Serializable, Parcelable

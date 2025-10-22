@@ -1,4 +1,4 @@
-package com.example.hungrytoad.ui.settings
+package com.example.hungrytoad.ui.menu
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -19,98 +19,117 @@ import com.example.hungrytoad.ui.theme.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-
+import com.example.hungrytoad.utils.SettingsManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    settingsManager: SettingsManager,
     onSettingsChanged: (GameSettings) -> Unit = {}
 ) {
     var gameSettings by remember { mutableStateOf(GameSettings()) }
 
-    Column(
+    // Загрузка настроек при открытии экрана
+    LaunchedEffect(Unit) {
+        settingsManager.settingsFlow.collect { settings ->
+            gameSettings = settings
+        }
+    }
+
+    // Сохранение настроек при изменении
+    LaunchedEffect(gameSettings) {
+        if (gameSettings != GameSettings()) {
+            settingsManager.saveSettings(gameSettings)
+            onSettingsChanged(gameSettings)
+        }
+    }
+
+    Box(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState())
+            .fillMaxSize(),
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            "Настройки игры",
-            style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(16.dp))
-
-        SettingItem(
-            title = "Скорость игры",
-            value = gameSettings.gameSpeed,
-            valueRange = 1f..10f,
-            onValueChange = {
-                gameSettings = gameSettings.copy(gameSpeed = it)
-                onSettingsChanged(gameSettings)
-            },
-            valueFormatter = { "${it.toInt()}/10" }
-        )
-
-        SettingItem(
-            title = "Интервал бонусов",
-            value = gameSettings.bonusInterval,
-            valueRange = 1f..10f,
-            onValueChange = {
-                gameSettings = gameSettings.copy(bonusInterval = it)
-                onSettingsChanged(gameSettings)
-            },
-            valueFormatter = { "${it.toInt()} сек" }
-        )
-
-        SettingItem(
-            title = "Длительность раунда",
-            value = gameSettings.roundDuration,
-            valueRange = 30f..180f,
-            onValueChange = {
-                gameSettings = gameSettings.copy(roundDuration = it)
-                onSettingsChanged(gameSettings)
-            },
-            valueFormatter = { "${it.toInt()} сек" }
-        )
-
-        Text(
-            "Дополнительные настройки",
-            style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(16.dp))
-
-        SwitchSettingItem(
-            title = "Звуковые эффекты",
-            checked = gameSettings.soundEnabled,
-            onCheckedChange = {
-                gameSettings = gameSettings.copy(soundEnabled = it)
-                onSettingsChanged(gameSettings)
-            }
-        )
-
-        SwitchSettingItem(
-            title = "Вибрация",
-            checked = gameSettings.vibrationEnabled,
-            onCheckedChange = {
-                gameSettings = gameSettings.copy(vibrationEnabled = it)
-                onSettingsChanged(gameSettings)
-            }
-        )
-
-        // Кнопка сброса настроек
-        Button(
-            onClick = {
-                gameSettings = GameSettings()
-                onSettingsChanged(gameSettings)
-            },
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 24.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Marsh
-            )
+                .fillMaxWidth(0.9f)
+                .verticalScroll(rememberScrollState())
         ) {
-            Text("Сбросить настройки", style = MaterialTheme.typography.bodyMedium,
+            Text(
+                "Настройки игры",
+                style = MaterialTheme.typography.headlineLarge,
+                modifier = Modifier.padding(16.dp)
+            )
+
+            SettingItem(
+                title = "Скорость игры",
+                value = gameSettings.gameSpeed,
+                valueRange = 1f..10f,
+                onValueChange = {
+                    gameSettings = gameSettings.copy(gameSpeed = it)
+                },
+                valueFormatter = { "${it.toInt()}/10" }
+            )
+
+            SettingItem(
+                title = "Интервал бонусов",
+                value = gameSettings.bonusInterval,
+                valueRange = 1f..10f,
+                onValueChange = {
+                    gameSettings = gameSettings.copy(bonusInterval = it)
+                },
+                valueFormatter = { "${it.toInt()} сек" }
+            )
+
+            SettingItem(
+                title = "Длительность раунда",
+                value = gameSettings.roundDuration,
+                valueRange = 30f..180f,
+                onValueChange = {
+                    gameSettings = gameSettings.copy(roundDuration = it)
+                },
+                valueFormatter = { "${it.toInt()} сек" }
+            )
+
+            Text(
+                "Дополнительные настройки",
+                style = MaterialTheme.typography.headlineLarge,
+                modifier = Modifier.padding(16.dp)
+            )
+
+            SwitchSettingItem(
+                title = "Звуковые эффекты",
+                checked = gameSettings.soundEnabled,
+                onCheckedChange = {
+                    gameSettings = gameSettings.copy(soundEnabled = it)
+                }
+            )
+
+            SwitchSettingItem(
+                title = "Вибрация",
+                checked = gameSettings.vibrationEnabled,
+                onCheckedChange = {
+                    gameSettings = gameSettings.copy(vibrationEnabled = it)
+                }
+            )
+
+            // Кнопка сброса настроек
+            Button(
+                onClick = {
+                    gameSettings = GameSettings()
+                },
                 modifier = Modifier
-                    .padding(horizontal = 12.dp, vertical = 10.dp))
+                    .fillMaxWidth()
+                    .padding(top = 24.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Marsh
+                )
+            ) {
+                Text(
+                    "Сбросить настройки",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                )
+            }
         }
     }
 }

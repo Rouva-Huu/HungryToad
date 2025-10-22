@@ -1,4 +1,4 @@
-package com.example.hungrytoad.ui.authors
+package com.example.hungrytoad.ui.menu
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -27,7 +27,7 @@ fun AuthorsScreen() {
     ) {
         Card(
             modifier = Modifier
-                .fillMaxWidth(0.9f)
+                .fillMaxWidth(0.7f)
                 .padding(vertical = 8.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
             colors = CardDefaults.cardColors(containerColor = LightNude)
@@ -35,14 +35,15 @@ fun AuthorsScreen() {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                Spacer(modifier = Modifier.width(30.dp))
                 Image(
                     painter = painterResource(R.drawable.frog_front),
                     contentDescription = "Аватар автора",
                     modifier = Modifier
-                        .size(64.dp)
+                        .size(60.dp)
                         .clip(CircleShape),
                     contentScale = ContentScale.Crop
                 )
