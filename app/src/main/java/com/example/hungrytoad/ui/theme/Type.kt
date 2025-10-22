@@ -38,8 +38,8 @@ val Typography = Typography(
     labelLarge = TextStyle(
         fontFamily = RuneScape,
         fontWeight = FontWeight.Normal,
-        fontSize = 27.sp,
-        lineHeight = 28.sp,
+        fontSize = 32.sp,
+        lineHeight = 33.sp,
         letterSpacing = 0.5.sp
     ),
     bodyMedium = TextStyle(

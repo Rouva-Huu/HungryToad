@@ -1,4 +1,4 @@
-package com.example.hungrytoad.ui.rules
+package com.example.hungrytoad.ui.menu
 
 import android.webkit.WebView
 import androidx.compose.foundation.layout.*
@@ -86,7 +86,7 @@ fun RulesScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(vertical = 16.dp, horizontal = 42.dp)
             .verticalScroll(rememberScrollState())
     ) {
         AndroidView(
