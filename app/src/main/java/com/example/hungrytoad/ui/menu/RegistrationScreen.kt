@@ -2,27 +2,37 @@ package com.example.hungrytoad.ui.menu
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import java.util.Calendar
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.hungrytoad.utils.ZodiacUtils
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.example.hungrytoad.model.Player
+import com.example.hungrytoad.ui.data.PlayerRepository
 import com.example.hungrytoad.ui.theme.*
+import com.example.hungrytoad.utils.DifficultySettings
+import com.example.hungrytoad.utils.SettingsManager
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RegistrationScreen(onRegistrationComplete: (Player) -> Unit) {
+fun RegistrationScreen(
+    onRegistrationComplete: (Player) -> Unit,
+    onNavigateToLogin: () -> Unit,
+    settingsManager: SettingsManager
+) {
     var fullName by remember { mutableStateOf("") }
     var selectedGender by remember { mutableStateOf("") }
     var selectedCourse by remember { mutableStateOf("") }
@@ -31,9 +41,16 @@ fun RegistrationScreen(onRegistrationComplete: (Player) -> Unit) {
     var sliderValue by remember { mutableStateOf(3f) }
     var birthDate by remember { mutableStateOf(Calendar.getInstance()) }
     var showDatePicker by remember { mutableStateOf(false) }
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var passwordError by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+    var registrationError by remember { mutableStateOf<String?>(null) }
 
     val courses = listOf("1 курс", "2 курс", "3 курс", "4 курс", "5 курс")
     val genders = listOf("Мужской", "Женский")
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     fun getDifficultyString(level: Float): String {
         return when (level.toInt()) {
             1 -> "Очень легко"
@@ -44,21 +61,17 @@ fun RegistrationScreen(onRegistrationComplete: (Player) -> Unit) {
             else -> "Неизвестно"
         }
     }
-
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = birthDate.timeInMillis
     )
-
     fun onDifficultyChanged(newValue: Float) {
         sliderValue = newValue
         difficultyLevel = getDifficultyString(newValue)
     }
-
     val zodiacSign = ZodiacUtils.getZodiacSign(
         birthDate.get(Calendar.DAY_OF_MONTH),
         birthDate.get(Calendar.MONTH) + 1
     )
-
     if (showDatePicker) {
         DatePickerDialog(
             colors = DatePickerDefaults.colors(
@@ -88,29 +101,21 @@ fun RegistrationScreen(onRegistrationComplete: (Player) -> Unit) {
             }
         ) {
             Box(
-                modifier = Modifier.scale(0.8f)
             ) {
                 DatePicker(
                     state = datePickerState,
-                    title = {
-                        Text(
-                            "Выберите дату рождения",
-//                            modifier = Modifier.padding(5.dp),
-                            color = DarkGreen
-                        )
-                    },
                     showModeToggle = false,
                     colors = DatePickerDefaults.colors(
                         headlineContentColor = DarkGreen,
                         containerColor = LightNude,
                         yearContentColor = DarkGreen,
                         navigationContentColor = DarkGreen
-                    )
+                    ),
+                    modifier = Modifier.scale(0.95f)
                 )
             }
         }
     }
-
     Box(
         modifier = Modifier
             .fillMaxSize(),
@@ -126,10 +131,12 @@ fun RegistrationScreen(onRegistrationComplete: (Player) -> Unit) {
                 "Регистрация игрока", style = MaterialTheme.typography.headlineLarge,
                 modifier = Modifier.padding(top = 20.dp, start = 10.dp)
             )
-
             OutlinedTextField(
                 value = fullName,
-                onValueChange = { fullName = it },
+                onValueChange = {
+                    fullName = it
+                    registrationError = null
+                },
                 label = { Text("ФИО", style = MaterialTheme.typography.labelMedium) },
                 modifier = Modifier.fillMaxWidth(),
                 colors = TextFieldDefaults.colors(
@@ -139,6 +146,59 @@ fun RegistrationScreen(onRegistrationComplete: (Player) -> Unit) {
                     focusedContainerColor = Nude
                 )
             )
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = {
+                    password = it
+                    passwordError = null
+                    registrationError = null
+                },
+                label = { Text("Пароль", style = MaterialTheme.typography.labelMedium) },
+                modifier = Modifier.fillMaxWidth(),
+                visualTransformation = PasswordVisualTransformation(),
+                colors = TextFieldDefaults.colors(
+                    unfocusedTextColor = PaleGreen,
+                    unfocusedLabelColor = PaleGreen,
+                    unfocusedContainerColor = Nude,
+                    focusedContainerColor = Nude
+                )
+            )
+
+            OutlinedTextField(
+                value = confirmPassword,
+                onValueChange = {
+                    confirmPassword = it
+                    passwordError = null
+                    registrationError = null
+                },
+                label = { Text("Подтверждение пароля", style = MaterialTheme.typography.labelMedium) },
+                modifier = Modifier.fillMaxWidth(),
+                visualTransformation = PasswordVisualTransformation(),
+                colors = TextFieldDefaults.colors(
+                    unfocusedTextColor = PaleGreen,
+                    unfocusedLabelColor = PaleGreen,
+                    unfocusedContainerColor = Nude,
+                    focusedContainerColor = Nude
+                )
+            )
+
+            if (passwordError != null) {
+                Text(
+                    text = passwordError!!,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            if (registrationError != null) {
+                Text(
+                    text = registrationError!!,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -200,7 +260,6 @@ fun RegistrationScreen(onRegistrationComplete: (Player) -> Unit) {
                         .menuAnchor(),
                     label = { Text("Выберите курс", style = MaterialTheme.typography.bodyMedium) }
                 )
-
                 ExposedDropdownMenu(
                     expanded = courseExpanded,
                     onDismissRequest = { courseExpanded = false },
@@ -223,7 +282,6 @@ fun RegistrationScreen(onRegistrationComplete: (Player) -> Unit) {
                         "${birthDate.get(Calendar.YEAR)}",
                 style = MaterialTheme.typography.bodyMedium
             )
-
             Button(
                 onClick = {
                     showDatePicker = true
@@ -280,7 +338,6 @@ fun RegistrationScreen(onRegistrationComplete: (Player) -> Unit) {
                         value = sliderValue,
                         onValueChange = { onDifficultyChanged(it) },
                         valueRange = 1f..5f,
-
                         modifier = Modifier.fillMaxWidth(),
                         colors = SliderDefaults.colors(
                             thumbColor = PaleGreen,
@@ -290,29 +347,87 @@ fun RegistrationScreen(onRegistrationComplete: (Player) -> Unit) {
                     )
                 }
             }
-
-
-
             Button(
                 onClick = {
-                    val player = Player(
-                        fullName = fullName,
-                        gender = selectedGender,
-                        course = selectedCourse,
-                        difficultyLevel = difficultyLevel,
-                        birthDate = birthDate,
-                        zodiacSign = zodiacSign
-                    )
-                    onRegistrationComplete(player)
+                    if (password != confirmPassword) {
+                        passwordError = "Пароли не совпадают"
+                        return@Button
+                    }
+                    if (password.length < 6) {
+                        passwordError = "Пароль должен содержать минимум 6 символов"
+                        return@Button
+                    }
+                    if (fullName.isBlank() || selectedGender.isBlank() || selectedCourse.isBlank()) {
+                        registrationError = "Заполните все обязательные поля"
+                        return@Button
+                    }
+
+                    isLoading = true
+                    registrationError = null
+
+                    scope.launch {
+                        try {
+                            val repository = PlayerRepository()
+
+                            val player = Player(
+                                fullName = fullName,
+                                gender = selectedGender,
+                                course = selectedCourse,
+                                difficultyLevel = difficultyLevel,
+                                birthDate = birthDate,
+                                zodiacSign = zodiacSign,
+                                password = password,
+                                bestScore = 0
+                            )
+
+                            val speed = DifficultySettings.getSpeedFromDifficulty(difficultyLevel)
+                            settingsManager.updateGameSpeed(speed)
+
+                            val playerId = repository.registerPlayer(player)
+                            val registeredPlayer = repository.getPlayer(playerId)
+
+                            registeredPlayer?.let {
+                                onRegistrationComplete(it)
+                            } ?: run {
+                                registrationError = "Ошибка при регистрации"
+                            }
+                        } catch (e: Exception) {
+                            registrationError = when {
+                                e.message?.contains("уже существует") == true -> "Пользователь с таким именем уже существует"
+                                else -> "Ошибка регистрации: ${e.message}"
+                            }
+                        } finally {
+                            isLoading = false
+                        }
+                    }
                 },
+                enabled = !isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.CenterHorizontally)
             ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        "Зарегистрироваться",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                    )
+                }
+            }
+
+            TextButton(
+                onClick = onNavigateToLogin,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text(
-                    "Зарегистрироваться", style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                    "Уже есть аккаунт? Войдите",
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
         }

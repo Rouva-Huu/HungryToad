@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntOffset
@@ -29,25 +30,45 @@ import com.example.hungrytoad.R
 import com.example.hungrytoad.model.FallingObject
 import com.example.hungrytoad.model.FallingObjectInstance
 import com.example.hungrytoad.model.GameSettings
+import com.example.hungrytoad.model.Player
+import com.example.hungrytoad.ui.data.PlayerRepository
 import com.example.hungrytoad.utils.SettingsManager
 import com.example.hungrytoad.viewmodel.GameViewModel
 import com.example.hungrytoad.viewmodel.GameViewModelFactory
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.LaunchedEffect
+import com.example.hungrytoad.AppStateManager
+import com.example.hungrytoad.utils.AccelerometerManager
+import com.example.hungrytoad.utils.SoundManager
 
 @Composable
 fun GameScreen(
     onNavigateToMenu: (String) -> Unit,
     onExitGame: () -> Unit,
-    settingsManager: SettingsManager
+    settingsManager: SettingsManager,
+    currentPlayer: Player?,
+    appStateManager: AppStateManager
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val gameViewModel: GameViewModel = viewModel(factory = GameViewModelFactory(settingsManager))
-
     val timeLeft by gameViewModel.timeLeft.collectAsState()
     val score by gameViewModel.score.collectAsState()
     val isPaused by gameViewModel.isPaused.collectAsState()
     val gameSettings by gameViewModel.gameSettings.collectAsState(initial = GameSettings())
     val gameOver by gameViewModel.gameOver.collectAsState()
+
+    var gravityBonusActive by remember { mutableStateOf(false) }
+    var gravityBonusTimeLeft by remember { mutableStateOf(0) }
+    var bonusSpawnTimer by remember { mutableStateOf(0) }
+
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    val accelerometerManager = remember { AccelerometerManager(context) }
+    val soundManager = remember { SoundManager(context) }
+
+    val tilt by accelerometerManager.tilt.collectAsState()
 
     var frogPosition by remember { mutableStateOf(54.dp) }
     var currentFrame by remember { mutableStateOf(1) }
@@ -67,6 +88,31 @@ fun GameScreen(
             isMoving = false
         }
     )
+
+    LaunchedEffect(Unit) {
+        accelerometerManager.start()
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            accelerometerManager.stop()
+            soundManager.release()
+        }
+    }
+
+
+
+    LaunchedEffect(gameOver) {
+        if (gameOver && currentPlayer != null && score > 0) {
+            scope.launch {
+                val repository = PlayerRepository()
+                repository.updateBestScore(currentPlayer.id, score)
+
+                appStateManager.updateBestScore(score)
+            }
+        }
+    }
+
     LaunchedEffect(isMoving) {
         if (isMoving) {
             while (isMoving) {
@@ -221,7 +267,8 @@ fun GameScreen(
             GameStats(
                 timeLeft = timeLeft,
                 score = score,
-                isPaused = isPaused
+                isPaused = isPaused,
+                bestScore = currentPlayer?.bestScore ?: 0
             )
             Spacer(modifier = Modifier.fillMaxWidth(0.68f))
             IconButton(
@@ -258,6 +305,7 @@ fun GameScreen(
             )
             GameOverScreen(
                 score = score,
+                bestScore = currentPlayer?.bestScore ?: 0,
                 onRestart = {
                     gameViewModel.resetGame()
                     fallingObjects = emptyList()
@@ -282,7 +330,7 @@ fun GameScreen(
 }
 
 @Composable
-fun GameStats(timeLeft: Int, score: Int, isPaused: Boolean) {
+fun GameStats(timeLeft: Int, score: Int, isPaused: Boolean, bestScore: Int) {
     Text(
         text = "Время: $timeLeft",
         style = MaterialTheme.typography.headlineMedium,
@@ -291,6 +339,12 @@ fun GameStats(timeLeft: Int, score: Int, isPaused: Boolean) {
     )
     Text(
         text = "Счет: $score",
+        style = MaterialTheme.typography.headlineMedium,
+        color = DarkGreen,
+        modifier = Modifier.padding(16.dp)
+    )
+    Text(
+        text = "Лучший: $bestScore",
         style = MaterialTheme.typography.headlineMedium,
         color = DarkGreen,
         modifier = Modifier.padding(16.dp)
@@ -308,6 +362,7 @@ fun GameStats(timeLeft: Int, score: Int, isPaused: Boolean) {
 @Composable
 fun GameOverScreen(
     score: Int,
+    bestScore: Int,
     onRestart: () -> Unit
 ) {
     Column(
@@ -361,21 +416,22 @@ fun GameMenuDialog(
             colors = CardDefaults.cardColors(containerColor = Nude)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(14.dp)
             ) {
                 Text(
                     "Меню игры",
                     style = MaterialTheme.typography.headlineLarge,
-                    modifier = Modifier.padding(start = 8.dp, bottom = 10.dp),
+                    modifier = Modifier.padding(start = 10.dp, bottom = 6.dp),
                     color = DarkGreen
                 )
 
                 MenuItem("Аккаунт") { onMenuSelected("account") }
                 MenuItem("Настройки") { onMenuSelected("settings") }
+                MenuItem("Рекорды") { onMenuSelected("records") }
                 MenuItem("Правила игры") { onMenuSelected("rules") }
                 MenuItem("Авторы") { onMenuSelected("authors") }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 Button(
                     onClick = onExitGame,
@@ -395,7 +451,6 @@ fun MenuItem(text: String, onClick: () -> Unit) {
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 2.dp)
     ) {
         Text(
             text = text,
@@ -424,7 +479,7 @@ private fun createRandomFallingObject(screenSize: IntSize, gameSpeed: Float): Fa
 
     val y = -40f
 
-    val speed = 1f * gameSpeed
+    val speed = 2.5f * gameSpeed
 
     return FallingObjectInstance(
         type = randomType,

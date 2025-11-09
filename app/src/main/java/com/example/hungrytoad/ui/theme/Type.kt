@@ -11,14 +11,14 @@ val RuneScape = FontFamily(
     Font(R.font.rune_scape)
 )
 val Harreegh = FontFamily(
-    Font(R.font.harreegh)
+    Font(R.font.alagard)
 )
 val Typography = Typography(
     bodyLarge = TextStyle(
         fontFamily = RuneScape,
         fontWeight = FontWeight.Normal,
         fontSize = 27.sp,
-        lineHeight = 28.sp,
+        lineHeight = 27.sp,
         letterSpacing = 0.5.sp
     ),
     titleLarge = TextStyle(
@@ -46,7 +46,7 @@ val Typography = Typography(
         fontFamily = RuneScape,
         fontWeight = FontWeight.Normal,
         fontSize = 22.sp,
-        lineHeight = 23.sp,
+        lineHeight = 22.sp,
         letterSpacing = 0.5.sp
     ),
     headlineMedium = TextStyle(
@@ -95,7 +95,7 @@ val Typography = Typography(
         fontFamily = RuneScape,
         fontWeight = FontWeight.Normal,
         fontSize = 18.sp,
-        lineHeight = 19.sp,
+        lineHeight = 18.sp,
         letterSpacing = 0.5.sp
     )
 )

@@ -19,28 +19,53 @@ import com.example.hungrytoad.ui.theme.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import com.example.hungrytoad.AppStateManager
+import com.example.hungrytoad.model.Player
+import com.example.hungrytoad.ui.data.PlayerRepository
+import com.example.hungrytoad.utils.DifficultySettings
 import com.example.hungrytoad.utils.SettingsManager
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     settingsManager: SettingsManager,
-    onSettingsChanged: (GameSettings) -> Unit = {}
+    currentPlayer: Player? = null,
+    appStateManager: AppStateManager? = null
 ) {
     var gameSettings by remember { mutableStateOf(GameSettings()) }
+    val scope = rememberCoroutineScope()
 
-    // Загрузка настроек при открытии экрана
     LaunchedEffect(Unit) {
         settingsManager.settingsFlow.collect { settings ->
             gameSettings = settings
         }
     }
 
-    // Сохранение настроек при изменении
+    var debounceJob by remember { mutableStateOf<Job?>(null) }
+
     LaunchedEffect(gameSettings) {
         if (gameSettings != GameSettings()) {
-            settingsManager.saveSettings(gameSettings)
-            onSettingsChanged(gameSettings)
+            debounceJob?.cancel()
+            debounceJob = scope.launch {
+                delay(300)
+                settingsManager.saveSettings(gameSettings)
+
+                currentPlayer?.let { player ->
+                    val newDifficulty = DifficultySettings.getDifficultyFromSpeed(gameSettings.gameSpeed)
+                    if (player.difficultyLevel != newDifficulty) {
+                        val updatedPlayer = player.copy(difficultyLevel = newDifficulty)
+                        appStateManager?.setCurrentPlayer(updatedPlayer)
+                        scope.launch {
+                            val repository = PlayerRepository()
+                            repository.updatePlayerDifficulty(player.id, newDifficulty)
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -59,15 +84,17 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.headlineLarge,
                 modifier = Modifier.padding(16.dp)
             )
-
             SettingItem(
                 title = "Скорость игры",
                 value = gameSettings.gameSpeed,
-                valueRange = 1f..10f,
-                onValueChange = {
-                    gameSettings = gameSettings.copy(gameSpeed = it)
+                valueRange = DifficultySettings.getSpeedRange(),
+                onValueChange = { newSpeed ->
+                    gameSettings = gameSettings.copy(gameSpeed = newSpeed)
                 },
-                valueFormatter = { "${it.toInt()}/10" }
+                valueFormatter = {
+                    val difficulty = DifficultySettings.getDifficultyFromSpeed(it)
+                    "${it.toInt()}/5 ($difficulty)"
+                }
             )
 
             SettingItem(
@@ -112,10 +139,22 @@ fun SettingsScreen(
                 }
             )
 
-            // Кнопка сброса настроек
             Button(
                 onClick = {
-                    gameSettings = GameSettings()
+                    val defaultSettings = GameSettings()
+                    gameSettings = defaultSettings
+
+                    scope.launch {
+                        settingsManager.saveSettings(defaultSettings)
+
+                        currentPlayer?.let { player ->
+                            val updatedPlayer = player.copy(difficultyLevel = "Нормально")
+                            appStateManager?.setCurrentPlayer(updatedPlayer)
+
+                            val repository = PlayerRepository()
+                            repository.updatePlayerDifficulty(player.id, "Нормально")
+                        }
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
