@@ -2,12 +2,15 @@ package com.example.hungrytoad.ui.game
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -38,6 +41,7 @@ import com.example.hungrytoad.viewmodel.GameViewModelFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.geometry.Offset
 import com.example.hungrytoad.AppStateManager
 import com.example.hungrytoad.utils.AccelerometerManager
 import com.example.hungrytoad.utils.SoundManager
@@ -61,6 +65,7 @@ fun GameScreen(
     var gravityBonusActive by remember { mutableStateOf(false) }
     var gravityBonusTimeLeft by remember { mutableStateOf(0) }
     var bonusSpawnTimer by remember { mutableStateOf(0) }
+    var lastUpdateTime by remember { mutableStateOf(System.currentTimeMillis()) }
 
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -89,8 +94,12 @@ fun GameScreen(
         }
     )
 
-    LaunchedEffect(Unit) {
-        accelerometerManager.start()
+    LaunchedEffect(gravityBonusActive) {
+        if (gravityBonusActive) {
+            accelerometerManager.start()
+        } else {
+            accelerometerManager.stop()
+        }
     }
 
     DisposableEffect(Unit) {
@@ -100,14 +109,34 @@ fun GameScreen(
         }
     }
 
+    LaunchedEffect(isPaused, gameOver, bonusSpawnTimer, gravityBonusActive) {
+        if (!isPaused && !gameOver && !gravityBonusActive) {
+            delay(1000)
+            bonusSpawnTimer++
 
+            if (bonusSpawnTimer >= 15) {
+                val bonus = createGravityBonus(screenSize, gameSettings.gameSpeed)
+                fallingObjects = fallingObjects + bonus
+                bonusSpawnTimer = 0
+            }
+        }
+    }
+
+    LaunchedEffect(isPaused, gameOver, gravityBonusActive, gravityBonusTimeLeft) {
+        if (!isPaused && !gameOver && gravityBonusActive && gravityBonusTimeLeft > 0) {
+            delay(1000)
+            gravityBonusTimeLeft--
+            if (gravityBonusTimeLeft <= 0) {
+                gravityBonusActive = false
+            }
+        }
+    }
 
     LaunchedEffect(gameOver) {
         if (gameOver && currentPlayer != null && score > 0) {
             scope.launch {
                 val repository = PlayerRepository()
                 repository.updateBestScore(currentPlayer.id, score)
-
                 appStateManager.updateBestScore(score)
             }
         }
@@ -122,7 +151,7 @@ fun GameScreen(
         }
     }
 
-    LaunchedEffect(isPaused, gameSettings, gameOver) {
+    LaunchedEffect(isPaused, gameSettings, gameOver, gravityBonusActive) {
         if (!isPaused && !gameOver) {
             while (true) {
                 delay((2000 / gameSettings.gameSpeed).toLong())
@@ -136,7 +165,7 @@ fun GameScreen(
         }
     }
 
-    LaunchedEffect(isPaused, gameOver) {
+    LaunchedEffect(isPaused, gameOver, gravityBonusActive, tilt) {
         if (!isPaused && !gameOver) {
             while (true) {
                 delay(16)
@@ -145,7 +174,6 @@ fun GameScreen(
                     val frogY = with(density) { 298.dp.toPx() }
                     val frogWidth = with(density) { 96.dp.toPx() }
                     val frogHeight = with(density) { 96.dp.toPx() }
-
                     val frogRect = android.graphics.Rect(
                         frogX.toInt(),
                         frogY.toInt(),
@@ -154,22 +182,48 @@ fun GameScreen(
                     )
 
                     fallingObjects = fallingObjects.mapNotNull { obj ->
-
-                        val newY = obj.y + obj.speed
+                        // Базовое движение - всегда падаем вниз
+                        var newY = obj.y + obj.speed
+                        var newX = obj.x
                         val newRotation = obj.rotation + obj.type.rotationSpeed / 60f
+
+                        // Применяем гравитационный бонус если активен
+                        if (gravityBonusActive && obj.type != FallingObject.GravityBonus) {
+                            // ТОЛЬКО когда бонус активен, применяем наклон
+                            val (tiltX, tiltY) = tilt
+
+                            // Корректируем оси для горизонтального положения телефона
+                            val gravityInfluence = 5.0f // Сила влияния гравитации
+
+                            // Применяем гравитацию - объекты скатываются в сторону наклона
+                            newX += tiltY * gravityInfluence
+                            // В бонусном режиме отключаем обычное падение вниз
+                            newY += tiltX * gravityInfluence
+
+                            // Ограничиваем движение в пределах экрана
+                            newX = newX.coerceIn(-40f, screenSize.width.toFloat())
+                            newY = newY.coerceIn(-40f, screenSize.height.toFloat())
+                        }
+                        // Если бонус не активен - объекты просто падают вниз (newY уже увеличен выше)
 
                         val objSize = with(density) { 40.dp.toPx() }
                         val objRect = android.graphics.Rect(
-                            obj.x.toInt(),
+                            newX.toInt(),
                             newY.toInt(),
-                            (obj.x + objSize).toInt(),
+                            (newX + objSize).toInt(),
                             (newY + objSize).toInt()
                         )
 
                         val isColliding = frogRect.intersect(objRect)
-
                         if (isColliding && !obj.isCollected) {
                             when (obj.type) {
+                                is FallingObject.GravityBonus -> {
+                                    // Активируем бонус гравитации
+                                    gravityBonusActive = true
+                                    gravityBonusTimeLeft = 10 // 10 секунд действия
+                                    soundManager.playBugScream()
+                                    null // Удаляем собранный бонус
+                                }
                                 is FallingObject.Bomb -> {
                                     gameViewModel.updateScore(obj.type.points)
                                     null
@@ -179,10 +233,11 @@ fun GameScreen(
                                     null
                                 }
                             }
-                        } else if (newY > screenSize.height || newY > with(density) { 300.dp.toPx() }) {
-                            null
+                        } else if (newY > screenSize.height || newX < -50f || newX > screenSize.width + 50f) {
+                            null // Удаляем объекты за пределами экрана
                         } else {
                             obj.copy(
+                                x = newX,
                                 y = newY,
                                 rotation = newRotation
                             )
@@ -195,6 +250,22 @@ fun GameScreen(
         }
     }
 
+    LaunchedEffect(gameOver) {
+        if (gameOver) {
+            gravityBonusActive = false
+            gravityBonusTimeLeft = 0
+            bonusSpawnTimer = 0
+            accelerometerManager.stop()
+        }
+    }
+
+    LaunchedEffect(isPaused) {
+        if (isPaused) {
+            accelerometerManager.stop()
+        } else if (gravityBonusActive) {
+            accelerometerManager.start()
+        }
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -258,6 +329,34 @@ fun GameScreen(
             )
         }
 
+        if (gravityBonusActive) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 60.dp)
+                    .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(8.dp))
+                    .padding(8.dp)
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "ГРАВИТАЦИОННЫЙ БОНУС",
+                        color = Color.Yellow,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = "Наклоняйте телефон!",
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = "Осталось: ${gravityBonusTimeLeft}с",
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -268,7 +367,8 @@ fun GameScreen(
                 timeLeft = timeLeft,
                 score = score,
                 isPaused = isPaused,
-                bestScore = currentPlayer?.bestScore ?: 0
+                bestScore = currentPlayer?.bestScore ?: 0,
+                bonusActive = gravityBonusActive
             )
             Spacer(modifier = Modifier.fillMaxWidth(0.68f))
             IconButton(
@@ -309,6 +409,9 @@ fun GameScreen(
                 onRestart = {
                     gameViewModel.resetGame()
                     fallingObjects = emptyList()
+                    gravityBonusActive = false
+                    gravityBonusTimeLeft = 0
+                    bonusSpawnTimer = 0
                 }
             )
         }
@@ -330,7 +433,7 @@ fun GameScreen(
 }
 
 @Composable
-fun GameStats(timeLeft: Int, score: Int, isPaused: Boolean, bestScore: Int) {
+fun GameStats(timeLeft: Int, score: Int, isPaused: Boolean, bestScore: Int, bonusActive: Boolean = false) {
     Text(
         text = "Время: $timeLeft",
         style = MaterialTheme.typography.headlineMedium,
@@ -349,6 +452,14 @@ fun GameStats(timeLeft: Int, score: Int, isPaused: Boolean, bestScore: Int) {
         color = DarkGreen,
         modifier = Modifier.padding(16.dp)
     )
+    if (bonusActive) {
+        Text(
+            text = "БОНУС!",
+            style = MaterialTheme.typography.headlineMedium,
+            color = Color.Red,
+            modifier = Modifier.padding(16.dp)
+        )
+    }
     if (isPaused) {
         Text(
             text = "ПАУЗА",
@@ -459,6 +570,21 @@ fun MenuItem(text: String, onClick: () -> Unit) {
             color = PaleGreen
         )
     }
+}
+private fun createGravityBonus(screenSize: IntSize, gameSpeed: Float): FallingObjectInstance {
+    val x = if (screenSize.width > 40) {
+        (0..(screenSize.width - 40)).random().toFloat()
+    } else {
+        0f
+    }
+    val y = -40f
+    val speed = 2.5f * gameSpeed
+    return FallingObjectInstance(
+        type = FallingObject.GravityBonus,
+        x = x,
+        y = y,
+        speed = speed
+    )
 }
 private fun createRandomFallingObject(screenSize: IntSize, gameSpeed: Float): FallingObjectInstance {
     val objectTypes = listOf(

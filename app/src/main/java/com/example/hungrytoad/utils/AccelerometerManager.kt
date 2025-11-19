@@ -15,19 +15,32 @@ class AccelerometerManager(private val context: Context) : SensorEventListener {
     private val _tilt = MutableStateFlow(Pair(0f, 0f))
     val tilt: StateFlow<Pair<Float, Float>> = _tilt
 
+    private var isRunning = false
+
     fun start() {
-        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME)
+        if (!isRunning) {
+            sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME)
+            isRunning = true
+        }
     }
 
     fun stop() {
-        sensorManager.unregisterListener(this)
+        if (isRunning) {
+            sensorManager.unregisterListener(this)
+            isRunning = false
+            _tilt.value = Pair(0f, 0f)
+        }
     }
 
     override fun onSensorChanged(event: SensorEvent) {
-        if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
+        if (event.sensor.type == Sensor.TYPE_ACCELEROMETER && isRunning) {
             val x = event.values[0]
             val y = event.values[1]
-            _tilt.value = Pair(x, y)
+
+            val filteredX = if (Math.abs(x) < 0.3f) 0f else x
+            val filteredY = if (Math.abs(y) < 0.3f) 0f else y
+
+            _tilt.value = Pair(filteredX, filteredY)
         }
     }
 
