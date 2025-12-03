@@ -25,14 +25,14 @@ fun HomeScreen(onHomeGame: () -> Unit) {
                 "Голодная жаба",
                 style = MaterialTheme.typography.labelLarge,
                 color = DarkGreen,
-                modifier = Modifier.padding(bottom = 60.dp)
+                modifier = Modifier.padding(bottom = 50.dp)
             )
 
             Button(
                 onClick = onHomeGame,
                 colors = ButtonDefaults.buttonColors(containerColor = PaleGreen),
                 modifier = Modifier
-                    .width(200.dp)
+                    .width(220.dp)
                     .height(60.dp)
             ) {
                 Text(

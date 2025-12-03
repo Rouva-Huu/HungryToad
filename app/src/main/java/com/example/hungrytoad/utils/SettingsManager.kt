@@ -32,6 +32,12 @@ class SettingsManager(private val context: Context) {
         }
     }
 
+    suspend fun updateGameSpeed(speed: Float) {
+        context.dataStore.edit { preferences ->
+            preferences[GAME_SPEED] = speed
+        }
+    }
+
     val settingsFlow: Flow<GameSettings> = context.dataStore.data.map { preferences ->
         GameSettings(
             gameSpeed = preferences[GAME_SPEED] ?: 5f,

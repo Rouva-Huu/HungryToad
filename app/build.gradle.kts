@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("kotlin-parcelize")
+    id("io.realm.kotlin") version "3.0.0"
 }
 
 android {
@@ -46,6 +47,17 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation("androidx.datastore:datastore-preferences:1.0.0")
+    implementation("io.realm.kotlin:library-base:3.0.0")
+    implementation("at.favre.lib:bcrypt:0.10.2")
+    implementation("androidx.compose.foundation:foundation:1.5.4")
+    implementation("androidx.media:media:1.6.0")
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-simplexml:2.9.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+    implementation("androidx.glance:glance:1.0.0")
+    implementation("androidx.glance:glance-appwidget:1.0.0")
+    implementation("androidx.glance:glance-material3:1.0.0")
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)

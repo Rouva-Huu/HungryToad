@@ -10,6 +10,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -18,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.example.hungrytoad.AppStateManager
 import com.example.hungrytoad.model.Player
 import com.example.hungrytoad.ui.theme.*
 import com.example.hungrytoad.utils.SettingsManager
@@ -27,10 +30,11 @@ import com.example.hungrytoad.utils.SettingsManager
 fun MenuScreen(
     selectedMenuItem: String,
     onReturnToGame: () -> Unit,
-    settingsManager: SettingsManager
+    settingsManager: SettingsManager,
+    appStateManager: AppStateManager
 ) {
-    var playerData by remember { mutableStateOf<Player?>(null) }
-
+    val currentPlayer by appStateManager.currentPlayer.collectAsState()
+    var showLoginScreen by remember { mutableStateOf(false) }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -39,7 +43,7 @@ fun MenuScreen(
                     IconButton(onClick = onReturnToGame) {
                         Icon(painter = painterResource(com.example.hungrytoad.R.drawable.ic_arrow_back),
                             contentDescription = "Назад к игре",
-                            Modifier.size(24.dp))
+                            Modifier.size(20.dp))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -53,18 +57,45 @@ fun MenuScreen(
         Box(modifier = Modifier.padding(paddingValues)) {
             when (selectedMenuItem) {
                 "account" -> {
-                    if (playerData != null) {
+                    if (currentPlayer != null) {
                         ResultsScreen(
-                            playerData = playerData!!,
-                            onReturnToRegistration = { playerData = null }
+                            playerData = currentPlayer!!,
+                            onReturnToRegistration = {
+                                appStateManager.setCurrentPlayer(null)
+                                showLoginScreen = false
+                            },
+                            isNewUser = false
                         )
                     } else {
-                        RegistrationScreen(
-                            onRegistrationComplete = { player -> playerData = player }
-                        )
+                        if (showLoginScreen) {
+                            LoginScreen(
+                                onLoginSuccess = { player ->
+                                    appStateManager.setCurrentPlayer(player)
+                                },
+                                onNavigateToRegistration = {
+                                    showLoginScreen = false
+                                },
+                                settingsManager = settingsManager
+                            )
+                        } else {
+                            RegistrationScreen(
+                                onRegistrationComplete = { player ->
+                                    appStateManager.setCurrentPlayer(player)
+                                },
+                                onNavigateToLogin = {
+                                    showLoginScreen = true
+                                },
+                                settingsManager = settingsManager
+                            )
+                        }
                     }
                 }
-                "settings" -> SettingsScreen(settingsManager = settingsManager)
+                "settings" -> SettingsScreen(
+                    settingsManager = settingsManager,
+                    currentPlayer = currentPlayer,
+                    appStateManager = appStateManager
+                )
+                "records" -> RecordsScreen()
                 "rules" -> RulesScreen()
                 "authors" -> AuthorsScreen()
             }

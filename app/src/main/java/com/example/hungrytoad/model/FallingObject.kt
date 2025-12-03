@@ -12,6 +12,8 @@ sealed class FallingObject(
     object Caterpillar : FallingObject(15, R.drawable.ic_caterpillar, 150f)
     object Ladybug : FallingObject(20, R.drawable.ic_insect,  180f)
     object Mosquito : FallingObject(5, R.drawable.ic_mosquito, 200f)
+    object GravityBonus : FallingObject(0, R.drawable.ic_gravity_bonus, 10f)
+    object GoldBeetle : FallingObject(0, R.drawable.ic_gold_bug, 10f)
 }
 data class FallingObjectInstance(
     val type: FallingObject,

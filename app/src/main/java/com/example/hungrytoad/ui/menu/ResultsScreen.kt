@@ -19,9 +19,12 @@ import com.example.hungrytoad.model.Player
 import com.example.hungrytoad.ui.theme.LightNude
 import com.example.hungrytoad.utils.ZodiacUtils
 import java.util.Calendar
-
 @Composable
-fun ResultsScreen(playerData: Player, onReturnToRegistration: () -> Unit) {
+fun ResultsScreen(
+    playerData: Player,
+    onReturnToRegistration: () -> Unit,
+    isNewUser: Boolean = false
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -29,21 +32,27 @@ fun ResultsScreen(playerData: Player, onReturnToRegistration: () -> Unit) {
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        PlayerResults(player = playerData, onReturnToRegistration = onReturnToRegistration)
+        PlayerResults(
+            player = playerData,
+            onReturnToRegistration = onReturnToRegistration,
+            isNewUser = isNewUser
+        )
     }
 }
-
 @Composable
-fun PlayerResults(player: Player, onReturnToRegistration: () -> Unit) {
+fun PlayerResults(
+    player: Player,
+    onReturnToRegistration: () -> Unit,
+    isNewUser: Boolean = false
+) {
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
-//        verticalArrangement = Arrangement.Center
     ) {
         Text(
-            "Регистрация завершена!",
+            text = if (isNewUser) "Регистрация завершена!" else "Аккаунт игрока",
             style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(top = 10.dp,bottom = 10.dp)
+            modifier = Modifier.padding(top = 10.dp, bottom = 10.dp)
         )
         Card(
             modifier = Modifier
@@ -65,6 +74,8 @@ fun PlayerResults(player: Player, onReturnToRegistration: () -> Unit) {
                 Text("Курс: ${player.course}", style = MaterialTheme.typography.bodyMedium)
                 Spacer(modifier = Modifier.height(17.dp))
                 Text("Уровень сложности: ${player.difficultyLevel}", style = MaterialTheme.typography.bodyMedium)
+                Spacer(modifier = Modifier.height(17.dp))
+                Text("Лучший счет: ${player.bestScore}", style = MaterialTheme.typography.bodyMedium)
                 Spacer(modifier = Modifier.height(17.dp))
                 Text(
                     "Дата рождения: ${player.birthDate.get(Calendar.DAY_OF_MONTH)}." +
@@ -96,7 +107,7 @@ fun PlayerResults(player: Player, onReturnToRegistration: () -> Unit) {
                 .fillMaxWidth(0.9f)
                 .padding(16.dp)
         ) {
-            Text("Вернуться к регистрации", style = MaterialTheme.typography.bodyMedium,
+            Text("Выйти из аккаунта", style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier
                     .padding(vertical = 10.dp))
         }
