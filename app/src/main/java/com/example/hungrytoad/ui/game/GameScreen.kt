@@ -2,14 +2,12 @@ package com.example.hungrytoad.ui.game
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -41,9 +39,9 @@ import com.example.hungrytoad.viewmodel.GameViewModelFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.geometry.Offset
 import com.example.hungrytoad.AppStateManager
 import com.example.hungrytoad.utils.AccelerometerManager
+import com.example.hungrytoad.utils.GoldManager
 import com.example.hungrytoad.utils.SoundManager
 
 @Composable
@@ -65,10 +63,13 @@ fun GameScreen(
     var gravityBonusActive by remember { mutableStateOf(false) }
     var gravityBonusTimeLeft by remember { mutableStateOf(0) }
     var bonusSpawnTimer by remember { mutableStateOf(0) }
-    var lastUpdateTime by remember { mutableStateOf(System.currentTimeMillis()) }
 
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+
+    var goldBeetleTimer by remember { mutableStateOf(0) }
+    val goldManager = remember { GoldManager(context) }
+    val currentGoldPrice by goldManager.currentGoldPrice.collectAsState()
 
     val accelerometerManager = remember { AccelerometerManager(context) }
     val soundManager = remember { SoundManager(context) }
@@ -94,6 +95,11 @@ fun GameScreen(
         }
     )
 
+    LaunchedEffect(Unit) {
+        goldManager.forceUpdate()
+        goldManager.startAutoUpdates()
+    }
+
     LaunchedEffect(gravityBonusActive) {
         if (gravityBonusActive) {
             accelerometerManager.start()
@@ -104,8 +110,22 @@ fun GameScreen(
 
     DisposableEffect(Unit) {
         onDispose {
+            goldManager.stopAutoUpdates()
             accelerometerManager.stop()
             soundManager.release()
+        }
+    }
+
+    LaunchedEffect(isPaused, gameOver, goldBeetleTimer) {
+        if (!isPaused && !gameOver) {
+            delay(1000)
+            goldBeetleTimer++
+
+            if (goldBeetleTimer >= 20) {
+                val goldBeetle = createGoldBeetle(screenSize, gameSettings.gameSpeed)
+                fallingObjects = fallingObjects + goldBeetle
+                goldBeetleTimer = 0
+            }
         }
     }
 
@@ -182,29 +202,21 @@ fun GameScreen(
                     )
 
                     fallingObjects = fallingObjects.mapNotNull { obj ->
-                        // Базовое движение - всегда падаем вниз
                         var newY = obj.y + obj.speed
                         var newX = obj.x
                         val newRotation = obj.rotation + obj.type.rotationSpeed / 60f
 
-                        // Применяем гравитационный бонус если активен
                         if (gravityBonusActive && obj.type != FallingObject.GravityBonus) {
-                            // ТОЛЬКО когда бонус активен, применяем наклон
                             val (tiltX, tiltY) = tilt
 
-                            // Корректируем оси для горизонтального положения телефона
-                            val gravityInfluence = 5.0f // Сила влияния гравитации
+                            val gravityInfluence = 5.0f
 
-                            // Применяем гравитацию - объекты скатываются в сторону наклона
                             newX += tiltY * gravityInfluence
-                            // В бонусном режиме отключаем обычное падение вниз
                             newY += tiltX * gravityInfluence
 
-                            // Ограничиваем движение в пределах экрана
                             newX = newX.coerceIn(-40f, screenSize.width.toFloat())
                             newY = newY.coerceIn(-40f, screenSize.height.toFloat())
                         }
-                        // Если бонус не активен - объекты просто падают вниз (newY уже увеличен выше)
 
                         val objSize = with(density) { 40.dp.toPx() }
                         val objRect = android.graphics.Rect(
@@ -218,14 +230,18 @@ fun GameScreen(
                         if (isColliding && !obj.isCollected) {
                             when (obj.type) {
                                 is FallingObject.GravityBonus -> {
-                                    // Активируем бонус гравитации
                                     gravityBonusActive = true
-                                    gravityBonusTimeLeft = 10 // 10 секунд действия
+                                    gravityBonusTimeLeft = 10
                                     soundManager.playBugScream()
-                                    null // Удаляем собранный бонус
+                                    null
                                 }
                                 is FallingObject.Bomb -> {
                                     gameViewModel.updateScore(obj.type.points)
+                                    null
+                                }
+                                is FallingObject.GoldBeetle -> {
+                                    val points = goldManager.getGoldBeetlePoints()
+                                    gameViewModel.updateScore(points)
                                     null
                                 }
                                 else -> {
@@ -234,7 +250,7 @@ fun GameScreen(
                                 }
                             }
                         } else if (newY > screenSize.height || newX < -50f || newX > screenSize.width + 50f) {
-                            null // Удаляем объекты за пределами экрана
+                            null
                         } else {
                             obj.copy(
                                 x = newX,
@@ -368,9 +384,10 @@ fun GameScreen(
                 score = score,
                 isPaused = isPaused,
                 bestScore = currentPlayer?.bestScore ?: 0,
-                bonusActive = gravityBonusActive
+                bonusActive = gravityBonusActive,
+                goldPrice = currentGoldPrice
             )
-            Spacer(modifier = Modifier.fillMaxWidth(0.68f))
+            Spacer(modifier = Modifier.fillMaxWidth(0.40f))
             IconButton(
                 onClick = { gameViewModel.togglePause() },
             ) {
@@ -433,7 +450,13 @@ fun GameScreen(
 }
 
 @Composable
-fun GameStats(timeLeft: Int, score: Int, isPaused: Boolean, bestScore: Int, bonusActive: Boolean = false) {
+fun GameStats(timeLeft: Int, score: Int, isPaused: Boolean, bestScore: Int, bonusActive: Boolean = false, goldPrice: Double = 0.0) {
+    Text(
+        text = "Золото: ${goldPrice.toInt()}₽",
+        style = MaterialTheme.typography.headlineMedium,
+        color = DarkGreen,
+        modifier = Modifier.padding(16.dp)
+    )
     Text(
         text = "Время: $timeLeft",
         style = MaterialTheme.typography.headlineMedium,
@@ -581,6 +604,21 @@ private fun createGravityBonus(screenSize: IntSize, gameSpeed: Float): FallingOb
     val speed = 2.5f * gameSpeed
     return FallingObjectInstance(
         type = FallingObject.GravityBonus,
+        x = x,
+        y = y,
+        speed = speed
+    )
+}
+private fun createGoldBeetle(screenSize: IntSize, gameSpeed: Float): FallingObjectInstance {
+    val x = if (screenSize.width > 40) {
+        (0..(screenSize.width - 40)).random().toFloat()
+    } else {
+        0f
+    }
+    val y = -40f
+    val speed = 2.5f * gameSpeed
+    return FallingObjectInstance(
+        type = FallingObject.GoldBeetle,
         x = x,
         y = y,
         speed = speed
